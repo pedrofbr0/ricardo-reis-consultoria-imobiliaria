@@ -1,68 +1,417 @@
+// schemaTypes/property.ts
 import { defineType, defineField } from 'sanity'
 
 export default defineType({
   name: 'property',
   title: 'Imóvel',
   type: 'document',
+  icon: () => '🏠',
+
+  // ─── Agrupamento visual no Studio ────────────────────────
+  fieldsets: [
+    { name: 'basic', title: '📋 Informações Básicas', options: { collapsible: true } },
+    { name: 'media', title: '📸 Fotos e Vídeos', options: { collapsible: true } },
+    { name: 'specs', title: '📐 Especificações', options: { collapsible: true } },
+    { name: 'financial', title: '💰 Valores', options: { collapsible: true } },
+    { name: 'location', title: '📍 Localização', options: { collapsible: true } },
+    { name: 'features', title: '✅ Características', options: { collapsible: true } },
+    { name: 'description', title: '📝 Descrição', options: { collapsible: true } },
+    { name: 'display', title: '🌐 Exibição no Site', options: { collapsible: true } },
+    { name: 'internal', title: '🔒 Dados Internos (não aparece no site)', options: { collapsible: true, collapsed: true } },
+  ],
+
   fields: [
+    // ═══════════════════════════════════════════════════════
+    // INFORMAÇÕES BÁSICAS
+    // ═══════════════════════════════════════════════════════
     defineField({
       name: 'title',
-      title: 'Título',
+      title: 'Título do Anúncio',
       type: 'string',
-      validation: (rule) => rule.required().error('O título é obrigatório'),
+      fieldset: 'basic',
+      description: 'Ex: "Apartamento no Santa Mônica" ou "Fazenda de Engorda · Triângulo Mineiro"',
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: 'slug',
-      title: 'Slug',
+      title: 'Slug (URL)',
       type: 'slug',
+      fieldset: 'basic',
       options: { source: 'title', maxLength: 96 },
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: 'image',
-      title: 'Foto Principal',
-      type: 'image',
-      options: { hotspot: true }, // permite crop inteligente
+      name: 'code',
+      title: 'Código do Imóvel',
+      type: 'string',
+      fieldset: 'basic',
+      description: 'Código interno. Ex: "1675"',
+    }),
+    defineField({
+      name: 'category',
+      title: 'Categoria',
+      type: 'reference',
+      to: [{ type: 'propertyCategory' }],
+      fieldset: 'basic',
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: 'tag',
-      title: 'Etiqueta',
-      type: 'string',
-      description: 'Ex: "Alto Padrão · Uberlândia" ou "Fazenda Produtiva"',
+      name: 'propertyType',
+      title: 'Tipo do Imóvel',
+      type: 'reference',
+      to: [{ type: 'propertyType' }],
+      fieldset: 'basic',
       validation: (rule) => rule.required(),
+      // Filtra tipos pela categoria selecionada
+      options: {
+        filter: ({ document }: any) => {
+          if (!document?.category?._ref) return {}
+          return {
+            filter: 'category._ref == $categoryId',
+            params: { categoryId: document.category._ref },
+          }
+        },
+      },
     }),
     defineField({
-      name: 'tagType',
-      title: 'Tipo da Etiqueta',
+      name: 'transactionType',
+      title: 'Tipo de Negócio',
       type: 'string',
+      fieldset: 'basic',
       options: {
         list: [
-          { title: 'Urbano (azul escuro)', value: 'urban' },
-          { title: 'Rural (verde)', value: 'farm' },
+          { title: 'Venda', value: 'sale' },
+          { title: 'Aluguel', value: 'rent' },
+          { title: 'Venda e Aluguel', value: 'both' },
         ],
         layout: 'radio',
       },
-      initialValue: 'urban',
+      initialValue: 'sale',
     }),
+
+    // ═══════════════════════════════════════════════════════
+    // MÍDIA — Galeria com múltiplas fotos, vídeos, GIFs
+    // ═══════════════════════════════════════════════════════
     defineField({
-      name: 'price',
-      title: 'Preço',
-      type: 'string',
-      description: 'Ex: "R$ 2.800.000" ou "Valor sob consulta"',
+      name: 'mainImage',
+      title: 'Foto de Capa',
+      type: 'image',
+      fieldset: 'media',
+      options: { hotspot: true },
+      description: 'Imagem principal que aparece no card do portfólio.',
       validation: (rule) => rule.required(),
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Texto alternativo',
+          type: 'string',
+        }),
+      ],
     }),
     defineField({
-      name: 'location',
-      title: 'Localização',
-      type: 'string',
-      description: 'Ex: "Uberlândia, MG"',
-      validation: (rule) => rule.required(),
-    }),
-    defineField({
-      name: 'attributes',
-      title: 'Atributos',
+      name: 'gallery',
+      title: 'Galeria de Fotos',
       type: 'array',
+      fieldset: 'media',
+      description: 'Adicione todas as fotos do imóvel. Arraste para reordenar.',
+      of: [
+        {
+          type: 'image',
+          options: { hotspot: true },
+          fields: [
+            defineField({
+              name: 'alt',
+              title: 'Descrição da foto',
+              type: 'string',
+            }),
+            defineField({
+              name: 'room',
+              title: 'Cômodo',
+              type: 'string',
+              options: {
+                list: [
+                  'Fachada', 'Sala', 'Quarto', 'Suíte', 'Cozinha',
+                  'Banheiro', 'Varanda', 'Garagem', 'Área Externa',
+                  'Piscina', 'Jardim', 'Vista Aérea', 'Outro',
+                ],
+              },
+            }),
+          ],
+        },
+      ],
+    }),
+    defineField({
+      name: 'videos',
+      title: 'Vídeos',
+      type: 'array',
+      fieldset: 'media',
+      description: 'Links de vídeos do YouTube, ou upload direto.',
+      of: [
+        {
+          type: 'object',
+          name: 'video',
+          title: 'Vídeo',
+          fields: [
+            defineField({
+              name: 'type',
+              title: 'Tipo',
+              type: 'string',
+              options: {
+                list: [
+                  { title: 'YouTube / Vimeo (link)', value: 'url' },
+                  { title: 'Upload direto', value: 'file' },
+                ],
+                layout: 'radio',
+              },
+              initialValue: 'url',
+            }),
+            defineField({
+              name: 'url',
+              title: 'URL do Vídeo',
+              type: 'url',
+              hidden: ({ parent }: any) => parent?.type !== 'url',
+            }),
+            defineField({
+              name: 'file',
+              title: 'Arquivo de Vídeo',
+              type: 'file',
+              options: { accept: 'video/*,.gif' },
+              hidden: ({ parent }: any) => parent?.type !== 'file',
+            }),
+            defineField({
+              name: 'caption',
+              title: 'Legenda',
+              type: 'string',
+            }),
+          ],
+          preview: {
+            select: { title: 'caption', subtitle: 'type' },
+            prepare({ title, subtitle }) {
+              return {
+                title: title || 'Vídeo sem legenda',
+                subtitle: subtitle === 'url' ? '🔗 Link' : '📁 Upload',
+              }
+            },
+          },
+        },
+      ],
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // ESPECIFICAÇÕES TÉCNICAS
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'totalArea',
+      title: 'Área Total (m²)',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'privateArea',
+      title: 'Área Privativa (m²)',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'landArea',
+      title: 'Área do Terreno (m² ou hectares)',
+      type: 'number',
+      fieldset: 'specs',
+      description: 'Para terrenos, sítios e fazendas.',
+    }),
+    defineField({
+      name: 'landAreaUnit',
+      title: 'Unidade da área do terreno',
+      type: 'string',
+      fieldset: 'specs',
+      options: {
+        list: [
+          { title: 'm²', value: 'sqm' },
+          { title: 'Hectares (ha)', value: 'ha' },
+          { title: 'Alqueires', value: 'alq' },
+        ],
+      },
+      initialValue: 'sqm',
+      hidden: ({ document }: any) => !document?.landArea,
+    }),
+    defineField({
+      name: 'bedrooms',
+      title: 'Dormitórios',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'suites',
+      title: 'Suítes',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'bathrooms',
+      title: 'Banheiros',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'parkingSpots',
+      title: 'Vagas de Garagem',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'floors',
+      title: 'Andares / Pavimentos',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+    defineField({
+      name: 'yearBuilt',
+      title: 'Ano de Construção',
+      type: 'number',
+      fieldset: 'specs',
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // VALORES FINANCEIROS
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'salePrice',
+      title: 'Preço de Venda (R$)',
+      type: 'number',
+      fieldset: 'financial',
+      description: 'Deixe vazio se "valor sob consulta".',
+    }),
+    defineField({
+      name: 'rentPrice',
+      title: 'Valor do Aluguel (R$)',
+      type: 'number',
+      fieldset: 'financial',
+    }),
+    defineField({
+      name: 'condoFee',
+      title: 'Condomínio (R$)',
+      type: 'number',
+      fieldset: 'financial',
+    }),
+    defineField({
+      name: 'iptu',
+      title: 'IPTU (R$)',
+      type: 'number',
+      fieldset: 'financial',
+      description: 'Valor mensal ou anual — indique abaixo.',
+    }),
+    defineField({
+      name: 'iptuPeriod',
+      title: 'Período do IPTU',
+      type: 'string',
+      fieldset: 'financial',
+      options: {
+        list: [
+          { title: 'Mensal', value: 'monthly' },
+          { title: 'Anual', value: 'yearly' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'monthly',
+      hidden: ({ document }: any) => !document?.iptu,
+    }),
+    defineField({
+      name: 'priceOnRequest',
+      title: 'Valor sob consulta?',
+      type: 'boolean',
+      fieldset: 'financial',
+      initialValue: false,
+      description: 'Se marcado, o preço não aparece no site.',
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // LOCALIZAÇÃO
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'neighborhood',
+      title: 'Bairro',
+      type: 'reference',
+      to: [{ type: 'neighborhood' }],
+      fieldset: 'location',
+    }),
+    defineField({
+      name: 'address',
+      title: 'Endereço',
+      type: 'string',
+      fieldset: 'location',
+      description: 'Rua e número (opcional — pode omitir por privacidade).',
+    }),
+    defineField({
+      name: 'showExactAddress',
+      title: 'Mostrar endereço exato no site?',
+      type: 'boolean',
+      fieldset: 'location',
+      initialValue: false,
+      description: 'Se não, mostra apenas o bairro e cidade.',
+    }),
+    defineField({
+      name: 'geopoint',
+      title: 'Coordenadas no Mapa',
+      type: 'geopoint',
+      fieldset: 'location',
+      description: 'Clique no mapa para marcar a localização.',
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // CARACTERÍSTICAS
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'characteristics',
+      title: 'Características do Imóvel',
+      type: 'array',
+      fieldset: 'features',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'characteristic' }],
+        },
+      ],
+      description: 'Selecione da lista. Ex: Cozinha Planejada, Piscina, Churrasqueira...',
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // DESCRIÇÃO
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'shortDescription',
+      title: 'Descrição Curta',
+      type: 'text',
+      fieldset: 'description',
+      rows: 3,
+      description: 'Aparece no card do portfólio. Máximo 2 linhas.',
+      validation: (rule) => rule.max(200),
+    }),
+    defineField({
+      name: 'fullDescription',
+      title: 'Descrição Completa',
+      type: 'array',
+      fieldset: 'description',
+      of: [{ type: 'block' }],
+      description: 'Descrição detalhada com formatação. Aparece na página do imóvel.',
+      // Usa Portable Text — permite negrito, itálico, listas, etc.
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // EXIBIÇÃO NO SITE
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'tag',
+      title: 'Etiqueta do Card',
+      type: 'string',
+      fieldset: 'display',
+      description: 'Ex: "Alto Padrão · Uberlândia", "Fazenda Produtiva". Aparece sobre a foto.',
+    }),
+    defineField({
+      name: 'displayAttributes',
+      title: 'Atributos do Card (máx. 3)',
+      type: 'array',
+      fieldset: 'display',
+      description: 'Ícones e textos que aparecem no card do portfólio.',
       of: [
         {
           type: 'object',
@@ -74,25 +423,21 @@ export default defineType({
               options: {
                 list: [
                   { title: '🛏 Quartos/Suítes', value: 'bed' },
-                  { title: '🚪 Banheiros', value: 'bath' },
-                  { title: '🌋 Piscina', value: 'pool' },
-
                   { title: '🚗 Vagas', value: 'car' },
                   { title: '🌳 Hectares/Área verde', value: 'trees' },
                   { title: '📐 Área/Metragem', value: 'area' },
-                  
+                  { title: '🚿 Banheiros', value: 'bath' },
                 ],
               },
             }),
             defineField({
               name: 'label',
-              title: 'Descrição',
+              title: 'Texto',
               type: 'string',
-              description: 'Ex: "5 Suítes", "480 m²"',
             }),
           ],
           preview: {
-            select: { title: 'label', subtitle: 'icon' },
+            select: { title: 'label' },
           },
         },
       ],
@@ -102,39 +447,163 @@ export default defineType({
       name: 'whatsappMessage',
       title: 'Mensagem do WhatsApp',
       type: 'text',
-      rows: 3,
-      description: 'Mensagem que será enviada quando clicarem no botão. Não precisa codificar URL, faremos isso automaticamente.',
+      fieldset: 'display',
+      rows: 2,
+      description: 'Mensagem pré-preenchida. O sistema codifica automaticamente.',
+    }),
+    defineField({
+      name: 'featured',
+      title: 'Destaque na home?',
+      type: 'boolean',
+      fieldset: 'display',
+      initialValue: false,
     }),
     defineField({
       name: 'order',
-      title: 'Ordem de Exibição',
+      title: 'Ordem de exibição',
       type: 'number',
+      fieldset: 'display',
       initialValue: 0,
-      description: 'Menor número aparece primeiro',
     }),
     defineField({
       name: 'active',
-      title: 'Ativo no site?',
+      title: 'Publicado no site?',
       type: 'boolean',
+      fieldset: 'display',
       initialValue: true,
+    }),
+
+    // ═══════════════════════════════════════════════════════
+    // DADOS INTERNOS (gerenciamento — NÃO aparece no site)
+    // ═══════════════════════════════════════════════════════
+    defineField({
+      name: 'status',
+      title: 'Status Interno',
+      type: 'string',
+      fieldset: 'internal',
+      options: {
+        list: [
+          { title: '🟢 Disponível', value: 'available' },
+          { title: '🟡 Reservado', value: 'reserved' },
+          { title: '🔴 Vendido', value: 'sold' },
+          { title: '🟠 Em negociação', value: 'negotiating' },
+          { title: '⚪ Suspenso', value: 'suspended' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'available',
+    }),
+    defineField({
+      name: 'ownerName',
+      title: 'Nome do Proprietário',
+      type: 'string',
+      fieldset: 'internal',
+    }),
+    defineField({
+      name: 'ownerPhone',
+      title: 'Telefone do Proprietário',
+      type: 'string',
+      fieldset: 'internal',
+    }),
+    defineField({
+      name: 'ownerEmail',
+      title: 'E-mail do Proprietário',
+      type: 'string',
+      fieldset: 'internal',
+    }),
+    defineField({
+      name: 'commission',
+      title: 'Comissão (%)',
+      type: 'number',
+      fieldset: 'internal',
+    }),
+    defineField({
+      name: 'exclusivity',
+      title: 'Exclusividade?',
+      type: 'boolean',
+      fieldset: 'internal',
+      initialValue: false,
+    }),
+    defineField({
+      name: 'exclusivityExpiration',
+      title: 'Validade da Exclusividade',
+      type: 'date',
+      fieldset: 'internal',
+      hidden: ({ document }: any) => !document?.exclusivity,
+    }),
+    defineField({
+      name: 'internalNotes',
+      title: 'Anotações Internas',
+      type: 'text',
+      fieldset: 'internal',
+      rows: 5,
+      description: 'Notas visíveis apenas no painel. Nunca aparece no site.',
+    }),
+    defineField({
+      name: 'keyLocation',
+      title: 'Onde está a chave?',
+      type: 'string',
+      fieldset: 'internal',
+    }),
+    defineField({
+      name: 'capturedAt',
+      title: 'Data de Captação',
+      type: 'date',
+      fieldset: 'internal',
+    }),
+    defineField({
+      name: 'source',
+      title: 'Origem do Imóvel',
+      type: 'string',
+      fieldset: 'internal',
+      options: {
+        list: [
+          'Captação própria',
+          'Indicação',
+          'Parceria com corretor',
+          'Imobiliária parceira',
+          'Proprietário direto',
+          'Outro',
+        ],
+      },
     }),
   ],
 
-  // Preview no painel do Sanity
+  // ─── Preview no painel ─────────────────────────────────
   preview: {
     select: {
       title: 'title',
-      subtitle: 'location',
-      media: 'image',
+      code: 'code',
+      neighborhood: 'neighborhood.name',
+      city: 'neighborhood.city',
+      status: 'status',
+      media: 'mainImage',
+    },
+    prepare({ title, code, neighborhood, city, status, media }) {
+      const statusEmoji: Record<string, string> = {
+        available: '🟢',
+        reserved: '🟡',
+        sold: '🔴',
+        negotiating: '🟠',
+        suspended: '⚪',
+      }
+      const emoji = statusEmoji[status] || ''
+      const sub = [code && `Cod: ${code}`, neighborhood, city]
+        .filter(Boolean)
+        .join(' · ')
+      return {
+        title: `${emoji} ${title}`,
+        subtitle: sub,
+        media,
+      }
     },
   },
 
-  // Ordenação padrão no Studio
+  // ─── Ordenações no Studio ──────────────────────────────
   orderings: [
-    {
-      title: 'Ordem de exibição',
-      name: 'orderAsc',
-      by: [{ field: 'order', direction: 'asc' }],
-    },
+    { title: 'Ordem de exibição', name: 'orderAsc', by: [{ field: 'order', direction: 'asc' }] },
+    { title: 'Mais recentes', name: 'createdDesc', by: [{ field: '_createdAt', direction: 'desc' }] },
+    { title: 'Código', name: 'codeAsc', by: [{ field: 'code', direction: 'asc' }] },
+    { title: 'Status', name: 'statusAsc', by: [{ field: 'status', direction: 'asc' }] },
   ],
 })
