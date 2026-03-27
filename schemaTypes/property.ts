@@ -1,5 +1,8 @@
 // schemaTypes/property.ts
 import { defineType, defineField } from 'sanity'
+import { AddressLookup } from '../components/AddressLookup'
+import { CepLookup } from '../components/CepLookup'
+import { MapInput } from '../components/MapInput'
 
 export default defineType({
   name: 'property',
@@ -7,17 +10,20 @@ export default defineType({
   type: 'document',
   icon: () => '🏠',
 
-  // ─── Agrupamento visual no Studio ────────────────────────
   fieldsets: [
-    { name: 'basic', title: '📋 Informações Básicas', options: { collapsible: true } },
-    { name: 'media', title: '📸 Fotos e Vídeos', options: { collapsible: true } },
+    { name: 'basic', title: '📋 Informações básicas', options: { collapsible: true } },
+    { name: 'media', title: '📸 Fotos e vídeos', options: { collapsible: true } },
     { name: 'specs', title: '📐 Especificações', options: { collapsible: true } },
     { name: 'financial', title: '💰 Valores', options: { collapsible: true } },
     { name: 'location', title: '📍 Localização', options: { collapsible: true } },
     { name: 'features', title: '✅ Características', options: { collapsible: true } },
     { name: 'description', title: '📝 Descrição', options: { collapsible: true } },
-    { name: 'display', title: '🌐 Exibição no Site', options: { collapsible: true } },
-    { name: 'internal', title: '🔒 Dados Internos (não aparece no site)', options: { collapsible: true, collapsed: true } },
+    { name: 'display', title: '🌐 Exibição no site', options: { collapsible: true } },
+    {
+      name: 'internal',
+      title: '🔒 Dados internos (não aparece no site)',
+      options: { collapsible: true, collapsed: true },
+    },
   ],
 
   fields: [
@@ -62,7 +68,6 @@ export default defineType({
       to: [{ type: 'propertyType' }],
       fieldset: 'basic',
       validation: (rule) => rule.required(),
-      // Filtra tipos pela categoria selecionada
       options: {
         filter: ({ document }: any) => {
           if (!document?.category?._ref) return {}
@@ -90,7 +95,7 @@ export default defineType({
     }),
 
     // ═══════════════════════════════════════════════════════
-    // MÍDIA — Galeria com múltiplas fotos, vídeos, GIFs
+    // MÍDIA
     // ═══════════════════════════════════════════════════════
     defineField({
       name: 'mainImage',
@@ -130,9 +135,19 @@ export default defineType({
               type: 'string',
               options: {
                 list: [
-                  'Fachada', 'Sala', 'Quarto', 'Suíte', 'Cozinha',
-                  'Banheiro', 'Varanda', 'Garagem', 'Área Externa',
-                  'Piscina', 'Jardim', 'Vista Aérea', 'Outro',
+                  'Fachada',
+                  'Sala',
+                  'Quarto',
+                  'Suíte',
+                  'Cozinha',
+                  'Banheiro',
+                  'Varanda',
+                  'Garagem',
+                  'Área Externa',
+                  'Piscina',
+                  'Jardim',
+                  'Vista Aérea',
+                  'Outro',
                 ],
               },
             }),
@@ -145,7 +160,7 @@ export default defineType({
       title: 'Vídeos',
       type: 'array',
       fieldset: 'media',
-      description: 'Links de vídeos do YouTube, ou upload direto.',
+      description: 'Links do YouTube ou upload direto de vídeos e GIFs.',
       of: [
         {
           type: 'object',
@@ -214,7 +229,7 @@ export default defineType({
     }),
     defineField({
       name: 'landArea',
-      title: 'Área do Terreno (m² ou hectares)',
+      title: 'Área do Terreno',
       type: 'number',
       fieldset: 'specs',
       description: 'Para terrenos, sítios e fazendas.',
@@ -298,7 +313,6 @@ export default defineType({
       title: 'IPTU (R$)',
       type: 'number',
       fieldset: 'financial',
-      description: 'Valor mensal ou anual — indique abaixo.',
     }),
     defineField({
       name: 'iptuPeriod',
@@ -321,25 +335,84 @@ export default defineType({
       type: 'boolean',
       fieldset: 'financial',
       initialValue: false,
-      description: 'Se marcado, o preço não aparece no site.',
     }),
 
     // ═══════════════════════════════════════════════════════
     // LOCALIZAÇÃO
     // ═══════════════════════════════════════════════════════
     defineField({
-      name: 'neighborhood',
-      title: 'Bairro',
-      type: 'reference',
-      to: [{ type: 'neighborhood' }],
+      name: 'geopoint',
+      title: 'Localização no Mapa',
+      type: 'geopoint',
       fieldset: 'location',
+      description: 'Busque o endereço ou clique no mapa para marcar.',
+      components: {
+        input: MapInput,
+      },
     }),
     defineField({
       name: 'address',
       title: 'Endereço',
       type: 'string',
       fieldset: 'location',
-      description: 'Rua e número (opcional — pode omitir por privacidade).',
+      description: 'Rua e número. Busque pelo endereço ou preencha manualmente.',
+      components: {
+        input: AddressLookup,
+      },
+    }),
+    defineField({
+      name: 'zipCode',
+      title: 'CEP',
+      type: 'string',
+      fieldset: 'location',
+      components: {
+        input: CepLookup,
+      },
+    }),
+    defineField({
+      name: 'neighborhood',
+      title: 'Bairro',
+      type: 'string',
+      fieldset: 'location',
+      description: 'Deixe vazio se não se aplica (fazendas, terrenos rurais).',
+    }),
+    defineField({
+      name: 'city',
+      title: 'Cidade',
+      type: 'string',
+      fieldset: 'location',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'state',
+      title: 'Estado',
+      type: 'string',
+      fieldset: 'location',
+      options: {
+        list: [
+          { title: 'Minas Gerais', value: 'MG' },
+          { title: 'Goiás', value: 'GO' },
+          { title: 'São Paulo', value: 'SP' },
+          { title: 'Mato Grosso do Sul', value: 'MS' },
+          { title: 'Mato Grosso', value: 'MT' },
+          { title: 'Bahia', value: 'BA' },
+          { title: 'Distrito Federal', value: 'DF' },
+          { title: 'Rio de Janeiro', value: 'RJ' },
+          { title: 'Paraná', value: 'PR' },
+          { title: 'Santa Catarina', value: 'SC' },
+          { title: 'Rio Grande do Sul', value: 'RS' },
+          { title: 'Pernambuco', value: 'PE' },
+          { title: 'Ceará', value: 'CE' },
+        ],
+      },
+      initialValue: 'MG',
+    }),
+    defineField({
+      name: 'region',
+      title: 'Região',
+      type: 'string',
+      fieldset: 'location',
+      description: 'Ex: "Triângulo Mineiro", "Setor Marista".',
     }),
     defineField({
       name: 'showExactAddress',
@@ -347,14 +420,14 @@ export default defineType({
       type: 'boolean',
       fieldset: 'location',
       initialValue: false,
-      description: 'Se não, mostra apenas o bairro e cidade.',
+      description: 'Se desativado, mostra apenas bairro/cidade.',
     }),
     defineField({
-      name: 'geopoint',
-      title: 'Coordenadas no Mapa',
-      type: 'geopoint',
+      name: 'locationLabel',
+      title: 'Rótulo de localização no card',
+      type: 'string',
       fieldset: 'location',
-      description: 'Clique no mapa para marcar a localização.',
+      description: 'Texto que aparece no card. Ex: "Uberlândia, MG" ou "Triângulo Mineiro".',
     }),
 
     // ═══════════════════════════════════════════════════════
@@ -365,13 +438,8 @@ export default defineType({
       title: 'Características do Imóvel',
       type: 'array',
       fieldset: 'features',
-      of: [
-        {
-          type: 'reference',
-          to: [{ type: 'characteristic' }],
-        },
-      ],
-      description: 'Selecione da lista. Ex: Cozinha Planejada, Piscina, Churrasqueira...',
+      of: [{ type: 'reference', to: [{ type: 'characteristic' }] }],
+      description: 'Selecione da lista: Cozinha Planejada, Piscina, Churrasqueira...',
     }),
 
     // ═══════════════════════════════════════════════════════
@@ -383,7 +451,7 @@ export default defineType({
       type: 'text',
       fieldset: 'description',
       rows: 3,
-      description: 'Aparece no card do portfólio. Máximo 2 linhas.',
+      description: 'Aparece no card do portfólio. Máximo 200 caracteres.',
       validation: (rule) => rule.max(200),
     }),
     defineField({
@@ -392,8 +460,7 @@ export default defineType({
       type: 'array',
       fieldset: 'description',
       of: [{ type: 'block' }],
-      description: 'Descrição detalhada com formatação. Aparece na página do imóvel.',
-      // Usa Portable Text — permite negrito, itálico, listas, etc.
+      description: 'Descrição detalhada com formatação (negrito, listas, etc.).',
     }),
 
     // ═══════════════════════════════════════════════════════
@@ -404,14 +471,14 @@ export default defineType({
       title: 'Etiqueta do Card',
       type: 'string',
       fieldset: 'display',
-      description: 'Ex: "Alto Padrão · Uberlândia", "Fazenda Produtiva". Aparece sobre a foto.',
+      description: 'Ex: "Alto Padrão · Uberlândia", "Fazenda Produtiva".',
     }),
     defineField({
       name: 'displayAttributes',
-      title: 'Atributos do Card (máx. 3)',
+      title: 'Atributos do Card (máx. 4)',
       type: 'array',
       fieldset: 'display',
-      description: 'Ícones e textos que aparecem no card do portfólio.',
+      description: 'Ícones e textos que aparecem no card.',
       of: [
         {
           type: 'object',
@@ -424,8 +491,8 @@ export default defineType({
                 list: [
                   { title: '🛏 Quartos/Suítes', value: 'bed' },
                   { title: '🚗 Vagas', value: 'car' },
-                  { title: '🌳 Hectares/Área verde', value: 'trees' },
-                  { title: '📐 Área/Metragem', value: 'area' },
+                  { title: '🌳 Hectares/Área', value: 'trees' },
+                  { title: '📐 Metragem', value: 'area' },
                   { title: '🚿 Banheiros', value: 'bath' },
                 ],
               },
@@ -474,7 +541,7 @@ export default defineType({
     }),
 
     // ═══════════════════════════════════════════════════════
-    // DADOS INTERNOS (gerenciamento — NÃO aparece no site)
+    // DADOS INTERNOS
     // ═══════════════════════════════════════════════════════
     defineField({
       name: 'status',
@@ -574,8 +641,8 @@ export default defineType({
     select: {
       title: 'title',
       code: 'code',
-      neighborhood: 'neighborhood.name',
-      city: 'neighborhood.city',
+      neighborhood: 'neighborhood',
+      city: 'city',
       status: 'status',
       media: 'mainImage',
     },
@@ -587,22 +654,23 @@ export default defineType({
         negotiating: '🟠',
         suspended: '⚪',
       }
-      const emoji = statusEmoji[status] || ''
-      const sub = [code && `Cod: ${code}`, neighborhood, city]
-        .filter(Boolean)
-        .join(' · ')
+      const emoji = statusEmoji[status || ''] || ''
+      const sub = [code && `Cod: ${code}`, neighborhood, city].filter(Boolean).join(' · ')
       return {
-        title: `${emoji} ${title}`,
+        title: `${emoji} ${title || 'Sem título'}`,
         subtitle: sub,
         media,
       }
     },
   },
 
-  // ─── Ordenações no Studio ──────────────────────────────
   orderings: [
     { title: 'Ordem de exibição', name: 'orderAsc', by: [{ field: 'order', direction: 'asc' }] },
-    { title: 'Mais recentes', name: 'createdDesc', by: [{ field: '_createdAt', direction: 'desc' }] },
+    {
+      title: 'Mais recentes',
+      name: 'createdDesc',
+      by: [{ field: '_createdAt', direction: 'desc' }],
+    },
     { title: 'Código', name: 'codeAsc', by: [{ field: 'code', direction: 'asc' }] },
     { title: 'Status', name: 'statusAsc', by: [{ field: 'status', direction: 'asc' }] },
   ],

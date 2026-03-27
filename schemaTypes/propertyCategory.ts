@@ -12,8 +12,6 @@ export default defineType({
       title: 'Nome da Categoria',
       type: 'string',
       validation: (rule) => rule.required(),
-      // Ex: "Imóveis Residenciais", "Comerciais e Industriais",
-      //     "Terrenos", "Empreendimento", "Rural"
     }),
     defineField({
       name: 'slug',

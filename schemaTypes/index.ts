@@ -1,4 +1,3 @@
-import neighborhood from "./neighborhood";
 import property from "./property";
 import propertyCategory from "./propertyCategory";
 import propertyType from "./propertyType";
@@ -13,7 +12,6 @@ export const schemaTypes = [
     propertyCategory,
     propertyType,
     characteristic,
-    neighborhood,
 
     // Configuration documents
     siteSettings

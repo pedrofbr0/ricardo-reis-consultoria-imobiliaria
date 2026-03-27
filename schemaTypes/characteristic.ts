@@ -12,7 +12,6 @@ export default defineType({
       title: 'Nome',
       type: 'string',
       validation: (rule) => rule.required(),
-      // Ex: "Cozinha Planejada", "Piscina", "Área de Serviço", etc.
     }),
     defineField({
       name: 'group',

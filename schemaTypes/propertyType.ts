@@ -12,7 +12,6 @@ export default defineType({
       title: 'Nome do Tipo',
       type: 'string',
       validation: (rule) => rule.required(),
-      // Ex: "Apartamento", "Casa", "Galpão", "Terreno", "Sítio", "Fazenda"
     }),
     defineField({
       name: 'slug',

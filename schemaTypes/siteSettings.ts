@@ -23,7 +23,7 @@ export default defineType({
       name: 'whatsappNumber',
       title: 'Número do WhatsApp',
       type: 'string',
-      description: 'Com código do país, sem +. Ex: 5534996896161',
+      description: 'Com código do país, sem +. Ex: 5534996731968',
     }),
     defineField({
       name: 'email',
@@ -34,6 +34,7 @@ export default defineType({
       name: 'defaultWhatsappMessage',
       title: 'Mensagem padrão do WhatsApp',
       type: 'text',
+      rows: 2,
       description: 'Mensagem do botão "Ver Portfólio Completo".',
     }),
     defineField({
